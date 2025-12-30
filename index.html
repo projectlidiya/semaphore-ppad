@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚜️ Latihan Lomba Semaphore ⚜️</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+body{
+  margin:0;
+  font-family:Poppins,sans-serif;
+  background:#f5efe6;
+  display:flex;
+  justify-content:center;
+}
+.app{max-width:440px;width:100%;padding:14px}
+.card{
+  background:#fff;
+  border-radius:16px;
+  padding:16px;
+  box-shadow:0 6px 16px rgba(0,0,0,.15);
+  margin-bottom:14px;
+}
+h2{text-align:center;color:#6d4c41}
+.rule{
+  border:2px dashed #6d4c41;
+  border-radius:12px;
+  padding:12px;
+  background:#fffaf0;
+  font-size:14px;
+}
+input{
+  width:100%;
+  height:52px;
+  padding:12px 14px;
+  font-size:16px;
+  border-radius:10px;
+  border:1px solid #bbb;
+  box-sizing:border-box;
+}
+input:focus{outline:none;border-color:#6d4c41}
+button{
+  padding:14px;
+  font-weight:600;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+}
+.btn-start{width:100%;background:#6d4c41;color:#fff}
+.btn-kirim{background:#1976d2;color:#fff;flex:2}
+.btn-lewati{background:#d32f2f;color:#fff;flex:1}
+.hidden{display:none}
+.top{
+  display:flex;
+  justify-content:space-between;
+  font-weight:600;
+  margin-bottom:6px;
+}
+video{
+  width:100%;
+  border-radius:12px;
+  background:#000;
+  margin:10px 0;
+}
+.action{display:flex;gap:10px;margin-top:10px}
+.correct{background:#c8e6c9}
+.wrong{background:#ffcdd2}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<!-- START -->
+<div id="start" class="card">
+  <h2>⚜️ LATIHAN LOMBA SEMAPHORE ⚜️</h2>
+
+  <div class="rule">
+    <b>Mekanisme Perlombaan:</b>
+    <ol>
+      <li>Soal berupa <b>animasi rangkaian gerakan semaphore</b>.</li>
+      <li>Diawali gerakan <b>PERHATIAN</b>.</li>
+      <li>Huruf diperagakan <b>satu per satu</b>.</li>
+      <li>Gerakan <b>SPASI</b>: posisi siap (bendera turun).</li>
+      <li>Animasi <b>loop</b> sampai waktu habis.</li>
+      <li>Jawaban harus <b>lengkap & tepat 100%</b>.</li>
+      <li><b>900 poin</b> + <b>bonus 100 poin</b> jika menjawab <b>< 1 menit</b>.</li>
+    </ol>
+  </div>
+
+  <input id="regu" placeholder="Nama Regu">
+  <button class="btn-start" onclick="mulai()">▶ MULAI LOMBA</button>
+</div>
+
+<!-- GAME -->
+<div id="game" class="hidden">
+  <div class="top">
+    <span id="timer"></span>
+    <span id="nomor"></span>
+  </div>
+
+  <div class="card">
+    <video id="video" autoplay loop muted></video>
+    <p><b>Apakah kata/kalimat yang diperagakan dalam kode semaphore ini?</b></p>
+
+    <input id="jawaban" placeholder="Ketik jawaban lengkap di sini">
+
+    <div class="action">
+      <button class="btn-lewati" onclick="lewati()">LEWATI</button>
+      <button class="btn-kirim" onclick="kirim()">KIRIM</button>
+    </div>
+  </div>
+</div>
+
+<!-- HASIL -->
+<div id="hasil" class="hidden card"></div>
+
+</div>
+
+<script>
+const video = document.getElementById('video');
+const start = document.getElementById('start');
+const game = document.getElementById('game');
+const hasil = document.getElementById('hasil');
+const jawaban = document.getElementById('jawaban');
+const nomor = document.getElementById('nomor');
+const regu = document.getElementById('regu');
+const timerEl = document.getElementById('timer');
+
+const SOAL = [
+  "KEMAMPUAN KREATIF DAN INOFATIF",
+  "MAMPU MENCIPTAKAN PELUANG USAHA",
+  "SETIA MEMBAYAR UANG IURAN",
+  "KEPADA GUGUS DEPANNYA",
+  "DARI USAHANYA SENDIRI"
+];
+
+// acak soal
+let urutan = SOAL.map((_,i)=>i).sort(()=>Math.random()-0.5);
+
+let i=0, skor=0, benar=0;
+const waktuSoal = 120; // 2 menit
+let sisa, timer;
+let data=[];
+
+// sound
+const sKlik=new Audio('sound/click.mp3');
+const sBenar=new Audio('sound/benar.mp3');
+const sSalah=new Audio('sound/salah.mp3');
+const sSelesai=new Audio('sound/selesai.mp3');
+const sTimeup=new Audio('sound/timeup.mp3');
+
+function mulai(){
+  if(!regu.value.trim()) return alert('Isi nama regu');
+  sKlik.play();
+  start.classList.add('hidden');
+  game.classList.remove('hidden');
+  tampil();
+}
+
+function tampil(){
+  sisa = waktuSoal;
+  timerEl.textContent = `⏱️ ${sisa} detik`;
+  nomor.textContent = `Soal ${i+1} / ${SOAL.length}`;
+  jawaban.value = '';
+  video.src = `video/${urutan[i]+1}.mp4`;
+
+  clearInterval(timer);
+  timer = setInterval(()=>{
+    sisa--;
+    timerEl.textContent = `⏱️ ${sisa} detik`;
+    if(sisa<=0){
+      clearInterval(timer);
+      sTimeup.play();
+      lewati();
+    }
+  },1000);
+}
+
+function normal(teks){
+  return teks.trim().toUpperCase().replace(/\s+/g,' ');
+}
+
+function kirim(){
+  clearInterval(timer);
+  sKlik.play();
+
+  const benarSoal = normal(jawaban.value) === normal(SOAL[urutan[i]]);
+  let poin = 0;
+
+  if(benarSoal){
+    poin = 900;
+    if(sisa >= 60) poin += 100; // bonus cepat
+    skor += poin;
+    benar++;
+    sBenar.play();
+  }else{
+    sSalah.play();
+  }
+
+  data.push({jawaban:jawaban.value, poin});
+  lanjut();
+}
+
+function lewati(){
+  clearInterval(timer);
+  data.push({jawaban:'(lewati)', poin:0});
+  lanjut();
+}
+
+function lanjut(){
+  i++;
+  i>=SOAL.length ? selesai() : tampil();
+}
+
+function selesai(){
+  game.classList.add('hidden');
+  sSelesai.play();
+
+  let html = `
+    <h2>Hasil Akhir</h2>
+    <p><b>Regu:</b> ${regu.value}</p>
+    <p><b>Jawaban Benar:</b> ${benar}</p>
+    <p><b>Total Skor:</b> ${skor}</p>
+  `;
+
+  data.forEach((d,idx)=>{
+    html += `
+      <div class="card ${d.poin>0?'correct':'wrong'}">
+        <b>Soal ${idx+1}</b><br>
+        Jawaban: ${d.jawaban}<br>
+        Poin: ${d.poin}
+      </div>`;
+  });
+
+  html += `<button class="btn-start" onclick="location.reload()">🔁 Ulangi Lomba</button>`;
+  hasil.innerHTML = html;
+  hasil.classList.remove('hidden');
+}
+</script>
+</body>
+</html>
